@@ -24,8 +24,6 @@ private:
 
     int history[MAX_PLIES];
 
-    void sort_move(int *moves, int n_move);
-
 public:
     int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
     int n_plies;

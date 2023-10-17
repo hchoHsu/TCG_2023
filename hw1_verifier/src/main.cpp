@@ -5,6 +5,7 @@
 #include <queue>
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
 #include "ewn.h"
 #define DICE 6
 #define MAX_BUFFER 5000000
@@ -15,14 +16,15 @@ vector<EWN> buffer(MAX_BUFFER);
 long long bidx = 0;
 int best = 0;
 
-unordered_map<EWN, int, ewnHash, ewnHashEqual> vis;
+unordered_map<size_t, int> vis;
+// unordered_set<size_t> vis_calc;
 
 struct game_cmp {
-    bool operator()(const int &a, const int &b) const {
-        return (buffer[a].state_value) > (buffer[b].state_value);
+    bool operator()(const size_t &a, const size_t &b) const {
+        return (buffer[vis[a]].state_value) > (buffer[vis[b]].state_value);
     }
 };
-priority_queue<int, vector<int>, game_cmp> pq;
+priority_queue<size_t, vector<size_t>, game_cmp> pq;
 
 
 int f_solve()
@@ -31,17 +33,22 @@ int f_solve()
     auto end = chrono::steady_clock::now();
     
     int cur;
+    size_t cur_hash;
     int n_move;
     int moves[MAX_MOVES];
 
     best = 0;
+    ewnHash ehash;
 
-    pq.push(0);
-    vis[buffer[0]] = 0;
+    cur_hash = ehash(buffer[0]);
+    pq.push(cur_hash);
+    vis[cur_hash] = 0;
     
     while (!pq.empty())
     {
-        cur = pq.top();
+        cur_hash = pq.top();
+        // vis_calc.insert(cur_hash);
+        cur = vis[cur_hash];
         pq.pop();
 
         n_move = buffer[cur].move_gen_all(moves);
@@ -63,10 +70,11 @@ int f_solve()
             if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
                 return buffer[best].print_history();
 
-            if (vis.find(buffer[cur]) == vis.end()) {
-                vis[buffer[cur]] = bidx;
-                buffer[bidx] = buffer[cur];
-                pq.push(bidx++);
+            cur_hash = ehash(buffer[cur]);
+            if (vis.find(cur_hash) == vis.end()) {
+                vis[cur_hash] = bidx;
+                buffer[bidx++] = buffer[cur];
+                pq.push(cur_hash);
             }
 
             buffer[cur].undo();
