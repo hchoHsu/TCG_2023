@@ -67,7 +67,7 @@ int f_solve()
                 break;
             }
 
-            if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
+            if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4950000000)
                 return buffer[best].print_history();
 
             cur_hash = ehash(buffer[cur]);
@@ -76,17 +76,28 @@ int f_solve()
                 buffer[bidx++] = buffer[cur];
                 pq.push(cur_hash);
             }
+            // else {
+            //     int vidx = vis[cur_hash];
+            //     if (buffer[vidx].n_plies > buffer[cur].n_plies) {
+            //         buffer[vidx] = buffer[cur];
+            //         if (vis_calc.find(cur_hash) == vis_calc.end()) {
+            //             pq.push(vidx);
+            //         }
+            //     }
+            // }
 
             buffer[cur].undo();
         }
     }
-    
-    return 0;
+    return buffer[best].print_history();
 }
 
 int main(int argc, char *argv[])
 {
+    auto start = chrono::steady_clock::now();
     buffer[bidx++].scan_board();
     f_solve();
+    auto end = chrono::steady_clock::now();
+    cout << "Total time: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
     return 0;
 }
