@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <queue>
+#include <chrono>
 #include <unordered_set>
 #include "ewn.h"
 #define DICE 6

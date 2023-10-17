@@ -209,6 +209,30 @@ int EWN::calc_step_need() {
         }
     }
     // TODO: target valid moves
+
+    int target_valid_moves = 0;
+    for (int i = 0; i < ; i++) {
+        if (pos[dice_seq[i]] == -1) {
+
+        }
+        else {
+            
+        }
+    }
+
     return step_need;
 }
 
+size_t EWN::calc_hash() {
+    std::hash<int> hasher;
+    size_t seed = 0;
+    seed ^= hasher(pos[1]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    seed ^= hasher(pos[2]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    seed ^= hasher(pos[3]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    seed ^= hasher(pos[4]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    seed ^= hasher(pos[5]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    seed ^= hasher(pos[6]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    // TODO: remove n_plies from hash
+    seed ^= hasher(n_plies) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+    return seed;
+}

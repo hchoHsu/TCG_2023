@@ -45,6 +45,7 @@ public:
     int heuristic2();
 
     int calc_step_need();
+    size_t calc_hash();
 };
 
 class ewnHash {
