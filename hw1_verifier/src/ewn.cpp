@@ -210,15 +210,15 @@ int EWN::calc_step_need() {
     }
     // TODO: target valid moves
 
-    int target_valid_moves = 0;
-    for (int i = 0; i < ; i++) {
-        if (pos[dice_seq[i]] == -1) {
+    // int target_valid_moves = 0;
+    // for (int i = 0; i < period; i++) {
+    //     if (pos[dice_seq[i]] == -1) {
 
-        }
-        else {
+    //     }
+    //     else {
             
-        }
-    }
+    //     }
+    // }
 
     return step_need;
 }
