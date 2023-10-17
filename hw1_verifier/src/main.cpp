@@ -4,66 +4,72 @@
 #include <string>
 #include <queue>
 #include <chrono>
-#include <unordered_set>
+#include <unordered_map>
 #include "ewn.h"
 #define DICE 6
-#define MAX_BUFFER 1000000
+#define MAX_BUFFER 5000000
 // #define DBG
 using namespace std;
 
+vector<EWN> buffer(MAX_BUFFER);
+long long bidx = 0;
+int best = 0;
+
+unordered_map<EWN, int, ewnHash, ewnHashEqual> vis;
+
 struct game_cmp {
-    bool operator()(const EWN &a, const EWN &b) const {
-        return (a.step_need + a.n_plies - a.valid_move) > (b.step_need + b.n_plies - b.valid_move);
+    bool operator()(const int &a, const int &b) const {
+        return (buffer[a].state_value) > (buffer[b].state_value);
     }
 };
+priority_queue<int, vector<int>, game_cmp> pq;
 
-vector<EWN> buffer(MAX_BUFFER);
-long long idx = 0;
 
-unordered_set<EWN, ewnHash, ewnHashEqual> vis;
-priority_queue<EWN, vector<EWN>, game_cmp> pq;
-
-EWN best_cur;
-
-int f_solve(EWN &init_game)
+int f_solve()
 {
     auto start = chrono::steady_clock::now();
     auto end = chrono::steady_clock::now();
     
-    EWN cur;
+    int cur;
     int n_move;
     int moves[MAX_MOVES];
 
-    best_cur = init_game;
-    best_cur.n_plies = MAX_PLIES;
+    best = 0;
 
-    pq.push(init_game);
-    vis.insert(init_game);
+    pq.push(0);
+    vis[buffer[0]] = 0;
     
     while (!pq.empty())
     {
         cur = pq.top();
         pq.pop();
 
-        n_move = cur.move_gen_all(moves);
+        n_move = buffer[cur].move_gen_all(moves);
+        // cout << "---\n";
+        // buffer[cur].print_board();
         for (int i = 0; i < n_move; i++) {
-            cur.do_move(moves[i]);
+            buffer[cur].do_move(moves[i]);
+            // buffer[cur].print_board();
+            
             end = chrono::steady_clock::now();
-            if (cur.is_goal() && cur.n_plies < best_cur.n_plies){
-                best_cur = cur;
+            if (buffer[cur].is_goal() && (buffer[cur].n_plies < buffer[best].n_plies || best == 0)){
+                best = bidx;
+                buffer[bidx++] = buffer[cur];
                 cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
+                buffer[cur].undo();
                 break;
             }
 
             if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
-                return best_cur.print_history();
+                return buffer[best].print_history();
 
-            if (vis.find(cur) == vis.end()) {
-                vis.insert(cur);
-                pq.push(cur);
+            if (vis.find(buffer[cur]) == vis.end()) {
+                vis[buffer[cur]] = bidx;
+                buffer[bidx] = buffer[cur];
+                pq.push(bidx++);
             }
-            
-            cur.undo();
+
+            buffer[cur].undo();
         }
     }
     
@@ -72,10 +78,7 @@ int f_solve(EWN &init_game)
 
 int main(int argc, char *argv[])
 {
-    EWN game;
-    game.scan_board();
-
-    f_solve(game);
-
+    buffer[bidx++].scan_board();
+    f_solve();
     return 0;
 }

@@ -26,6 +26,8 @@ EWN::EWN() {
     n_plies = 0;
     step_need = calc_step_need();
     valid_move = calc_valid_move();
+
+    state_value = step_need + n_plies - valid_move;
 }
 
 void set_dir_value() {
@@ -169,6 +171,8 @@ void EWN::do_move(int move) {
 
     if (goal_piece == 0 || goal_piece == piece)
         calc_step_need();
+
+    state_value = step_need + n_plies - valid_move;
 }
 
 void EWN::undo() {
@@ -194,6 +198,8 @@ void EWN::undo() {
 
     if (goal_piece == 0 || goal_piece == piece || goal_piece == eaten_piece)
         calc_step_need();
+
+    state_value = step_need + n_plies - valid_move;
 }
 
 int EWN::calc_valid_move() {

@@ -31,6 +31,7 @@ public:
     int n_plies;
     int step_need;
     int valid_move;
+    int state_value;
 
     EWN();
     void scan_board();
