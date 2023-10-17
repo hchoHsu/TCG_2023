@@ -30,6 +30,7 @@ public:
     int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
     int n_plies;
     int step_need;
+    int valid_move;
 
     EWN();
     void scan_board();
@@ -41,10 +42,8 @@ public:
     void do_move(int move);
     void undo();
 
-    int heuristic();
-    int heuristic2();
-
     int calc_step_need();
+    int calc_valid_move();
     size_t calc_hash();
 };
 

@@ -25,6 +25,7 @@ EWN::EWN() {
     
     n_plies = 0;
     step_need = calc_step_need();
+    valid_move = calc_valid_move();
 }
 
 void set_dir_value() {
@@ -155,14 +156,19 @@ void EWN::do_move(int move) {
     }
     if (board[dst] > 0) {
         pos[board[dst]] = -1;
+        calc_valid_move();
         move |= board[dst] << 8;
+
+        if (board[dst] == goal_piece)
+            step_need = MAX_MOVES + 1;
     }
     board[pos[piece]] = 0;
     board[dst] = piece;
     pos[piece] = dst;
     history[n_plies++] = move;
 
-    calc_step_need(); // TODO
+    if (goal_piece == 0 || goal_piece == piece)
+        calc_step_need();
 }
 
 void EWN::undo() {
@@ -180,12 +186,35 @@ void EWN::undo() {
     if (eaten_piece > 0) {
         board[pos[piece]] = eaten_piece;
         pos[eaten_piece] = pos[piece];
+        calc_valid_move();
     }
     else board[pos[piece]] = 0;
     board[dst] = piece;
     pos[piece] = dst;
 
-    calc_step_need(); // TODO
+    if (goal_piece == 0 || goal_piece == piece || goal_piece == eaten_piece)
+        calc_step_need();
+}
+
+int EWN::calc_valid_move() {
+    if (goal_piece == 0 || pos[goal_piece] < 0) {
+        valid_move = 0;
+        return 0;
+    }
+
+    valid_move = 0;
+    int small = goal_piece - 1;
+    int large = goal_piece + 1;
+
+    while (pos[small] == -1) small--;
+    while (pos[large] == -1) large++;
+
+    for (int i = 0; i < period; i++) {
+        if (dice_seq[i] > small && dice_seq[i] < large)
+            valid_move++;
+    }
+
+    return valid_move;
 }
 
 int EWN::calc_step_need() {
@@ -208,17 +237,6 @@ int EWN::calc_step_need() {
             }
         }
     }
-    // TODO: target valid moves
-
-    // int target_valid_moves = 0;
-    // for (int i = 0; i < period; i++) {
-    //     if (pos[dice_seq[i]] == -1) {
-
-    //     }
-    //     else {
-            
-    //     }
-    // }
 
     return step_need;
 }

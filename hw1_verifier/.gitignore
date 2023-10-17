@@ -1,4 +1,6 @@
 agent
+agent.out
+agent.exe
 verifier
 
 dbg.out
