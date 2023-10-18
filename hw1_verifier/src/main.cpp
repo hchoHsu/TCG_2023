@@ -427,7 +427,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
         }
 
         end = chrono::steady_clock::now();
-        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4500000000)
+        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4100000000)
             return print_history(best);
             // return buffer[best].print_history();
     }
