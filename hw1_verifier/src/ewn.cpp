@@ -10,8 +10,7 @@
 int ROW;
 int COL;
 int PERIOD;
-int dir_value[8];
-int dice_seq[MAX_PERIOD];
+static int dir_value[8];
 
 EWN::EWN() {
     row = 0;
