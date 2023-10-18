@@ -50,7 +50,7 @@ private:
 
 public:
     int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
-    int history[MAX_PLIES];
+    // int history[MAX_PLIES];
     int n_plies;
     int step_need;
     int valid_move;
@@ -103,16 +103,16 @@ public:
         }
         printf("%d,%d\n", n_plies, step_need);
     }
-    int print_history() {
-        printf("%d\n", n_plies);
-        int piece, dir;
-        for (int i = 0; i < n_plies; i++) {
-            piece = (history[i] & 255) >> 4;
-            dir = history[i] & 15;
-            printf("%d %d\n", piece, dir);
-        }
-        return 0;
-    }
+    // int print_history() {
+    //     printf("%d\n", n_plies);
+    //     int piece, dir;
+    //     for (int i = 0; i < n_plies; i++) {
+    //         piece = (history[i] & 255) >> 4;
+    //         dir = history[i] & 15;
+    //         printf("%d %d\n", piece, dir);
+    //     }
+    //     return 0;
+    // }
     bool is_goal()
     {
         if (goal_piece == 0) {
@@ -206,7 +206,8 @@ void EWN::do_move(int move) {
     board[pos[piece]] = 0;
     board[dst] = piece;
     pos[piece] = dst;
-    history[n_plies++] = move;
+    // history[n_plies++] = move;
+    n_plies++;
     restore_last_move = last_move;
     last_move = move;
 
@@ -222,7 +223,9 @@ void EWN::undo() {
         exit(1);
     }
 
-    int move = history[--n_plies];
+    // int move = history[--n_plies];
+    n_plies--;
+    int move = last_move;
     last_move = restore_last_move;
     int eaten_piece = move >> 8;
     int piece = (move & 255) >> 4;
@@ -298,9 +301,9 @@ void EWN::copy(const EWN& a, int new_parent) {
     state_value = a.state_value;
     valid_move = a.valid_move;
     state_value = a.state_value;
-    for (int i = 0; i < a.n_plies; i++) {
-        history[i] = a.history[i];
-    }
+    // for (int i = 0; i < a.n_plies; i++) {
+    //     history[i] = a.history[i];
+    // }
     last_move = a.last_move;
     parent = new_parent;
 }
