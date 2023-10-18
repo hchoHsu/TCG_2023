@@ -292,10 +292,9 @@ void EWN::calc_step_need() {
 }
 
 void EWN::copy(const EWN& a, int new_parent) {
-    for (int i = 0; i < MAX_PIECES + 2; i++) {
+    for (int i = 1; i < MAX_PIECES+1; i++) {
         pos[i] = a.pos[i];
-        if (pos[i] != -1 && pos[i] != 999)
-            board[pos[i]] = i;
+        board[pos[i]] = i;
     }
     n_plies = a.n_plies;
     state_value = a.state_value;
@@ -427,7 +426,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
         }
 
         end = chrono::steady_clock::now();
-        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4500000000)
+        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4100000000)
             return print_history(best);
             // return buffer[best].print_history();
     }
