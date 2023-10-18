@@ -399,7 +399,6 @@ int f_solve()
             buffer[cur].do_move(moves[i]);
             // buffer[cur].print_board();
             
-            end = chrono::steady_clock::now();
             if (buffer[cur].is_goal() && (buffer[cur].n_plies < buffer[best].n_plies || best == 0)){
                 best = bidx;
                 // buffer[bidx++] = buffer[cur];
@@ -409,10 +408,6 @@ int f_solve()
                 break;
             }
 
-            if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
-                return print_history(best);
-                // return buffer[best].print_history();
-
             cur_hash = ehash(buffer[cur]);
             if (vis.find(cur_hash) == vis.end()) {
                 vis[cur_hash] = bidx;
@@ -420,18 +415,21 @@ int f_solve()
                 buffer[bidx++].copy(buffer[cur], cur);
                 pq.push(cur_hash);
             }
-            // else {
-            //     int vidx = vis[cur_hash];
-            //     if (buffer[vidx].n_plies > buffer[cur].n_plies) {
-            //         buffer[vidx] = buffer[cur];
-            //         if (vis_calc.find(cur_hash) == vis_calc.end()) {
-            //             pq.push(vidx);
-            //         }
-            //     }
-            // }
+            else {
+                int vidx = vis[cur_hash];
+                if (buffer[vidx].n_plies > buffer[cur].n_plies) {   // if the new one takes less steps
+                    vis[cur_hash] = cur;
+                    buffer[bidx++].copy(buffer[cur], cur);
+                }
+            }
 
             buffer[cur].undo();
         }
+
+        end = chrono::steady_clock::now();
+        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 6000000000)
+            return print_history(best);
+            // return buffer[best].print_history();
     }
     // return buffer[best].print_history();
     return print_history(best);
