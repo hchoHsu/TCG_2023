@@ -292,9 +292,10 @@ void EWN::calc_step_need() {
 }
 
 void EWN::copy(const EWN& a, int new_parent) {
-    for (int i = 1; i < MAX_PIECES+1; i++) {
+    for (int i = 0; i < MAX_PIECES + 2; i++) {
         pos[i] = a.pos[i];
-        board[pos[i]] = i;
+        if (pos[i] != -1 && pos[i] != 999)
+            board[pos[i]] = i;
     }
     n_plies = a.n_plies;
     state_value = a.state_value;
@@ -385,7 +386,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
     cur_hash = ehash(buffer[0]);
     pq.push(cur_hash);
     vis[cur_hash] = 0;
-    
+
     while (!pq.empty())
     {
         cur_hash = pq.top();
@@ -397,7 +398,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
         for (int i = 0; i < n_move; i++) {
             buffer[cur].do_move(moves[i]);
             // buffer[cur].print_board();
-            
+
             if (buffer[cur].is_goal() && (buffer[cur].n_plies < buffer[best].n_plies || best == 0)){
                 best = bidx;
                 // buffer[bidx++] = buffer[cur];
