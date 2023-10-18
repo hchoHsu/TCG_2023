@@ -370,10 +370,10 @@ struct game_cmp {
 priority_queue<size_t, vector<size_t>, game_cmp> pq;
 
 
-int f_solve()
+int f_solve(chrono::time_point<chrono::steady_clock> &start)
 {
-    auto start = chrono::steady_clock::now();
-    auto end = chrono::steady_clock::now();
+    // auto start = chrono::steady_clock::now();
+    chrono::time_point<chrono::steady_clock> end;
 
     int cur;
     size_t cur_hash;
@@ -403,7 +403,7 @@ int f_solve()
                 best = bidx;
                 // buffer[bidx++] = buffer[cur];
                 buffer[bidx++].copy(buffer[cur], cur);
-                cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
+                // cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
                 buffer[cur].undo();
                 break;
             }
@@ -437,9 +437,9 @@ int f_solve()
 
 int main(int argc, char *argv[])
 {
-    // auto start = chrono::steady_clock::now();
+    chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
     buffer[bidx++].scan_board();
-    f_solve();
+    f_solve(start);
     // auto end = chrono::steady_clock::now();
     // cout << "Total time: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
     return 0;
