@@ -146,9 +146,9 @@ int move_gen2(int *moves, int piece, int location) {
     int lcol = location % col;
 
     bool left_ok = lcol != 0;
-    bool right_ok = lcol != lcol - 1;
+    bool right_ok = lcol != col - 1;
     bool up_ok = lrow != 0;
-    bool down_ok = lrow != lrow - 1;
+    bool down_ok = lrow != row - 1;
 
     if (down_ok && right_ok) moves[count++] = piece << 4 | 7;
     if (down_ok) moves[count++] = piece << 4 | 6;
