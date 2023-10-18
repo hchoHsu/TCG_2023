@@ -1,15 +1,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <climits>
 #include "ewn.h"
-
-#define max(i,j) i>j?i:j
 
 // these variables are available after calling EWN::scan_board()
 int ROW;
 int COL;
-int PERIOD;
 static int dir_value[8];
 
 EWN::EWN() {
@@ -22,12 +18,7 @@ EWN::EWN() {
     }
     period = 0;
     goal_piece = 0;
-    
     n_plies = 0;
-    step_need = calc_step_need();
-    valid_move = calc_valid_move();
-
-    state_value = step_need + n_plies - valid_move;
 }
 
 void set_dir_value() {
@@ -57,10 +48,7 @@ void EWN::scan_board() {
     // initialize global variables
     ROW = row;
     COL = col;
-    PERIOD = period;
     set_dir_value();
-    // printf("hhh");
-    calc_step_need();
 }
 
 void EWN::print_board() {
@@ -70,18 +58,6 @@ void EWN::print_board() {
         }
         printf("\n");
     }
-    printf("%d,%d\n", n_plies, step_need);
-}
-
-int EWN::print_history() {
-    printf("%d\n", n_plies);
-    int piece, dir;
-    for (int i = 0; i < n_plies; i++) {
-        piece = (history[i] & 255) >> 4;
-        dir = history[i] & 15;
-        printf("%d %d\n", piece, dir);
-    }
-    return 0;
 }
 
 bool EWN::is_goal() {
@@ -111,16 +87,15 @@ int move_gen2(int *moves, int piece, int location) {
     bool up_ok = row != 0;
     bool down_ok = row != ROW - 1;
 
-    if (down_ok && right_ok) moves[count++] = piece << 4 | 7;
-    if (down_ok) moves[count++] = piece << 4 | 6;
-    if (right_ok) moves[count++] = piece << 4 | 4;
-
-    if (down_ok && left_ok) moves[count++] = piece << 4 | 5;
-    if (up_ok && right_ok) moves[count++] = piece << 4 | 2;
-
     if (up_ok) moves[count++] = piece << 4 | 1;
     if (left_ok) moves[count++] = piece << 4 | 3;
+    if (right_ok) moves[count++] = piece << 4 | 4;
+    if (down_ok) moves[count++] = piece << 4 | 6;
+
     if (up_ok && left_ok) moves[count++] = piece << 4 | 0;
+    if (up_ok && right_ok) moves[count++] = piece << 4 | 2;
+    if (down_ok && left_ok) moves[count++] = piece << 4 | 5;
+    if (down_ok && right_ok) moves[count++] = piece << 4 | 7;
 
     return count;
 }
@@ -143,7 +118,6 @@ int EWN::move_gen_all(int *moves) {
     else {
         count = move_gen2(moves, dice, pos[dice]);
     }
-
     return count;
 }
 
@@ -158,21 +132,12 @@ void EWN::do_move(int move) {
     }
     if (board[dst] > 0) {
         pos[board[dst]] = -1;
-        calc_valid_move();
         move |= board[dst] << 8;
-
-        if (board[dst] == goal_piece)
-            step_need = MAX_MOVES + 1;
     }
     board[pos[piece]] = 0;
     board[dst] = piece;
     pos[piece] = dst;
     history[n_plies++] = move;
-
-    if (goal_piece == 0 || goal_piece == piece)
-        calc_step_need();
-
-    state_value = step_need + n_plies - valid_move;
 }
 
 void EWN::undo() {
@@ -190,73 +155,8 @@ void EWN::undo() {
     if (eaten_piece > 0) {
         board[pos[piece]] = eaten_piece;
         pos[eaten_piece] = pos[piece];
-        calc_valid_move();
     }
     else board[pos[piece]] = 0;
     board[dst] = piece;
     pos[piece] = dst;
-
-    if (goal_piece == 0 || goal_piece == piece || goal_piece == eaten_piece)
-        calc_step_need();
-
-    state_value = step_need + n_plies - valid_move;
-}
-
-int EWN::calc_valid_move() {
-    if (goal_piece == 0 || pos[goal_piece] < 0) {
-        valid_move = 0;
-        return 0;
-    }
-
-    valid_move = 0;
-    int small = goal_piece - 1;
-    int large = goal_piece + 1;
-
-    while (pos[small] == -1) small--;
-    while (pos[large] == -1) large++;
-
-    for (int i = 0; i < period; i++) {
-        if (dice_seq[i] > small && dice_seq[i] < large)
-            valid_move++;
-    }
-
-    return valid_move;
-}
-
-int EWN::calc_step_need() {
-    int tmp = 0;
-    step_need = MAX_MOVES + 1;
-    // target shortest distance
-    if (goal_piece != 0) {
-        if (pos[goal_piece] < 0) {
-            return step_need;
-        }
-        tmp = max(row - pos[goal_piece]/row - 1, col - pos[goal_piece]%col - 1);
-        step_need = tmp;
-    }
-    else {
-        for (int i = 1; i < MAX_PIECES+1; i++) {
-            if (pos[i] != -1) {
-                tmp = max(row - pos[i]/row - 1, col - pos[i]%col - 1);
-                if (step_need > tmp)
-                    step_need = tmp;
-            }
-        }
-    }
-
-    return step_need;
-}
-
-size_t EWN::calc_hash() {
-    std::hash<int> hasher;
-    size_t seed = 0;
-    seed ^= hasher(pos[1]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[2]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[3]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[4]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[5]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[6]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    // TODO: remove n_plies from hash
-    seed ^= hasher(n_plies) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    return seed;
 }
