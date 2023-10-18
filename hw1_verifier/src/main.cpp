@@ -56,6 +56,7 @@ public:
     int valid_move;
     int state_value;
     int parent;
+    int restore_last_move;
     int last_move;
 
     EWN()
@@ -70,6 +71,7 @@ public:
         valid_move = 0;
         state_value = 0;
         parent = -1;
+        last_move = 0;
     }
     void scan_board()
     {
@@ -205,6 +207,8 @@ void EWN::do_move(int move) {
     board[dst] = piece;
     pos[piece] = dst;
     history[n_plies++] = move;
+    restore_last_move = last_move;
+    last_move = move;
 
     if (goal_piece == 0 || goal_piece == piece)
         calc_step_need();
@@ -219,6 +223,7 @@ void EWN::undo() {
     }
 
     int move = history[--n_plies];
+    last_move = restore_last_move;
     int eaten_piece = move >> 8;
     int piece = (move & 255) >> 4;
     int direction = move & 15;
@@ -296,6 +301,7 @@ void EWN::copy(const EWN& a, int new_parent) {
     for (int i = 0; i < a.n_plies; i++) {
         history[i] = a.history[i];
     }
+    last_move = a.last_move;
     parent = new_parent;
 }
 
@@ -401,7 +407,8 @@ int f_solve()
             }
 
             if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
-                return buffer[best].print_history();
+                return print_history(best);
+                // return buffer[best].print_history();
 
             cur_hash = ehash(buffer[cur]);
             if (vis.find(cur_hash) == vis.end()) {
@@ -423,7 +430,8 @@ int f_solve()
             buffer[cur].undo();
         }
     }
-    return buffer[best].print_history();
+    // return buffer[best].print_history();
+    return print_history(best);
 }
 
 int main(int argc, char *argv[])
