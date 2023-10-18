@@ -33,45 +33,6 @@ int goal_piece;
 int dice_seq[MAX_PERIOD];
 int dir_value[8];
 
-class EWN{
-private:
-    int board[MAX_ROW * MAX_COL];
-    int history[MAX_PLIES];
-
-public:
-    int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
-    int n_plies;
-    int step_need;
-    int valid_move;
-    int state_value;
-
-    EWN();
-    void scan_board();
-    void print_board();
-    bool is_goal();
-    int print_history();
-
-    int move_gen_all(int *moves);
-    void do_move(int move);
-    void undo();
-
-    int calc_step_need();
-    int calc_valid_move();
-    size_t calc_hash();
-};
-
-EWN::EWN() {
-    pos[0] = 999;
-    pos[MAX_PIECES + 1] = 999;
-    for (int i = 1; i <= MAX_PIECES; i++) {
-        pos[i] = -1;
-    }
-    n_plies = 0;
-    step_need = 0;
-    valid_move = 0;
-    state_value = 0;
-}
-
 void set_dir_value() {
     dir_value[0] = -col - 1;
     dir_value[1] = -col;
@@ -83,56 +44,92 @@ void set_dir_value() {
     dir_value[7] = col + 1;
 }
 
-void EWN::scan_board() {
-    scanf(" %d %d", &row, &col);
-    for (int i = 0; i < row * col; i++) {
-        scanf(" %d", &board[i]);
-        if (board[i] > 0)
-            pos[board[i]] = i;
-    }
-    scanf(" %d", &period);
-    for (int i = 0; i < period; i++) {
-        scanf(" %d", &dice_seq[i]);
-    }
-    scanf(" %d", &goal_piece);
+class EWN{
+private:
+    int board[MAX_ROW * MAX_COL];
 
-    set_dir_value();
-    // printf("hhh");
-    calc_step_need();
-    calc_valid_move();
-    state_value = step_need + n_plies - valid_move;
-}
+public:
+    int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
+    int history[MAX_PLIES];
+    int n_plies;
+    int step_need;
+    int valid_move;
+    int state_value;
+    int parent;
+    int last_move;
 
-void EWN::print_board() {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            printf("%4d", board[i * col + j]);
+    EWN()
+    {
+        pos[0] = 999;
+        pos[MAX_PIECES + 1] = 999;
+        for (int i = 1; i <= MAX_PIECES; i++) {
+            pos[i] = -1;
         }
-        printf("\n");
+        n_plies = 0;
+        step_need = 0;
+        valid_move = 0;
+        state_value = 0;
+        parent = -1;
     }
-    printf("%d,%d\n", n_plies, step_need);
-}
+    void scan_board()
+    {
+        scanf(" %d %d", &row, &col);
+        for (int i = 0; i < row * col; i++) {
+            scanf(" %d", &board[i]);
+            if (board[i] > 0)
+                pos[board[i]] = i;
+        }
+        scanf(" %d", &period);
+        for (int i = 0; i < period; i++) {
+            scanf(" %d", &dice_seq[i]);
+        }
+        scanf(" %d", &goal_piece);
 
-int EWN::print_history() {
-    printf("%d\n", n_plies);
-    int piece, dir;
-    for (int i = 0; i < n_plies; i++) {
-        piece = (history[i] & 255) >> 4;
-        dir = history[i] & 15;
-        printf("%d %d\n", piece, dir);
+        set_dir_value();
+        // printf("hhh");
+        calc_step_need();
+        calc_valid_move();
+        state_value = step_need + n_plies - valid_move;
     }
-    return 0;
-}
+    void print_board()
+    {
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < col; j++) {
+                printf("%4d", board[i * col + j]);
+            }
+            printf("\n");
+        }
+        printf("%d,%d\n", n_plies, step_need);
+    }
+    int print_history() {
+        printf("%d\n", n_plies);
+        int piece, dir;
+        for (int i = 0; i < n_plies; i++) {
+            piece = (history[i] & 255) >> 4;
+            dir = history[i] & 15;
+            printf("%d %d\n", piece, dir);
+        }
+        return 0;
+    }
+    bool is_goal()
+    {
+        if (goal_piece == 0) {
+            if (board[row * col - 1] > 0) return true;
+        }
+        else {
+            if (board[row * col - 1] == goal_piece) return true;
+        }
+        return false;
+    }
 
-bool EWN::is_goal() {
-    if (goal_piece == 0) {
-        if (board[row * col - 1] > 0) return true;
-    }
-    else {
-        if (board[row * col - 1] == goal_piece) return true;
-    }
-    return false;
-}
+    int move_gen_all(int *moves);
+    void do_move(int move);
+    void undo();
+
+    void calc_step_need();
+    void calc_valid_move();
+    void copy(const EWN& a, int new_parent);
+};
 
 /*
 move: an integer using only 12 bits
@@ -242,10 +239,10 @@ void EWN::undo() {
     state_value = step_need + n_plies - valid_move;
 }
 
-int EWN::calc_valid_move() {
+void EWN::calc_valid_move() {
     if (goal_piece == 0 || pos[goal_piece] < 0) {
         valid_move = 0;
-        return 0;
+        return;
     }
 
     valid_move = 0;
@@ -260,16 +257,16 @@ int EWN::calc_valid_move() {
             valid_move++;
     }
 
-    return valid_move;
+    return;
 }
 
-int EWN::calc_step_need() {
+void EWN::calc_step_need() {
     int tmp = 0;
     step_need = MAX_MOVES + 1;
     // target shortest distance
     if (goal_piece != 0) {
         if (pos[goal_piece] < 0) {
-            return step_need;
+            return;
         }
         tmp = max(row - pos[goal_piece]/row - 1, col - pos[goal_piece]%col - 1);
         step_need = tmp;
@@ -283,24 +280,24 @@ int EWN::calc_step_need() {
             }
         }
     }
-
-    return step_need;
+    return;
 }
 
-size_t EWN::calc_hash() {
-    std::hash<int> hasher;
-    size_t seed = 0;
-    seed ^= hasher(pos[1]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[2]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[3]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[4]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[5]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    seed ^= hasher(pos[6]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    // TODO: remove n_plies from hash
-    seed ^= hasher(n_plies) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
-    return seed;
+void EWN::copy(const EWN& a, int new_parent) {
+    for (int i = 0; i < MAX_PIECES + 2; i++) {
+        pos[i] = a.pos[i];
+        if (pos[i] != -1 && pos[i] != 999)
+            board[pos[i]] = i;
+    }
+    n_plies = a.n_plies;
+    state_value = a.state_value;
+    valid_move = a.valid_move;
+    state_value = a.state_value;
+    for (int i = 0; i < a.n_plies; i++) {
+        history[i] = a.history[i];
+    }
+    parent = new_parent;
 }
-
 
 class ewnHash {
 public:
@@ -335,6 +332,24 @@ public:
 vector<EWN> buffer(MAX_BUFFER);
 long long bidx = 0;
 int best = 0;
+
+int print_history_recursive(int i) {
+    if (buffer[i].parent == -1)
+        return 0;
+    else {
+        print_history_recursive(buffer[i].parent);
+        int piece, dir;
+        piece = (buffer[i].last_move & 255) >> 4;
+        dir = buffer[i].last_move & 15;
+        printf("%d %d\n", piece, dir);
+    }
+    return 0;
+}
+
+int print_history(int cur_idx) {
+    cout << buffer[cur_idx].n_plies << '\n';
+    return print_history_recursive(cur_idx);
+}
 
 unordered_map<size_t, int> vis;
 
@@ -378,19 +393,21 @@ int f_solve()
             end = chrono::steady_clock::now();
             if (buffer[cur].is_goal() && (buffer[cur].n_plies < buffer[best].n_plies || best == 0)){
                 best = bidx;
-                buffer[bidx++] = buffer[cur];
-                // cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
+                // buffer[bidx++] = buffer[cur];
+                buffer[bidx++].copy(buffer[cur], cur);
+                cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
                 buffer[cur].undo();
                 break;
             }
 
-            if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4950000000)
+            if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4900000000)
                 return buffer[best].print_history();
 
             cur_hash = ehash(buffer[cur]);
             if (vis.find(cur_hash) == vis.end()) {
                 vis[cur_hash] = bidx;
-                buffer[bidx++] = buffer[cur];
+                // buffer[bidx++] = buffer[cur];
+                buffer[bidx++].copy(buffer[cur], cur);
                 pq.push(cur_hash);
             }
             // else {
