@@ -1,7 +1,6 @@
 CFLAGS = -std=c++11 -O2 -Wall -Wextra
 
-all:
-	@echo "usage: make verifier"
+all: agent verifier
 
 agent: src/main.cpp
 	g++ -std=c++11 -O3 -Wall -Wextra $^ -o $@
