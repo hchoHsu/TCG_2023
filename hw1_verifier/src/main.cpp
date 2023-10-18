@@ -320,7 +320,7 @@ public:
         seed ^= hasher(cur.pos[5]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
         seed ^= hasher(cur.pos[6]) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
         // TODO: remove n_plies from hash
-        seed ^= hasher(cur.n_plies) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
+        // seed ^= hasher(cur.n_plies) + 0x9e3779b9 + (seed<<6) + (seed >> 2);
         return seed;
     }
 };
@@ -333,8 +333,8 @@ public:
                lhs.pos[3] == rhs.pos[3] &&
                lhs.pos[4] == rhs.pos[4] &&
                lhs.pos[5] == rhs.pos[5] &&
-               lhs.pos[6] == rhs.pos[6] &&
-               lhs.n_plies == rhs.n_plies;
+               lhs.pos[6] == rhs.pos[6]; // &&
+            //    lhs.n_plies == rhs.n_plies;
     }
 };
 
@@ -427,7 +427,7 @@ int f_solve()
         }
 
         end = chrono::steady_clock::now();
-        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 6000000000)
+        if (chrono::duration_cast<chrono::nanoseconds>(end - start).count() >= 4500000000)
             return print_history(best);
             // return buffer[best].print_history();
     }
