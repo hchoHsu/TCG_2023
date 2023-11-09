@@ -422,7 +422,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
                 if (buffer[vidx].n_plies > buffer[cur].n_plies) {   // if the new one takes less steps
                     vis[cur_hash] = cur;
                     buffer[bidx++].copy(buffer[cur], cur);
-		    bidx %= MAX_BUFFER;
+		    bidx %= MAX_BUFFER
                 }
             }
 
