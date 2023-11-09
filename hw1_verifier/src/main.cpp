@@ -13,7 +13,7 @@
 #include <climits>
 
 #define DICE 6
-#define MAX_BUFFER 2200000
+#define MAX_BUFFER 5000000
 #define MAX_ROW 9
 #define MAX_COL 9
 #define MAX_PIECES 6
@@ -44,10 +44,9 @@ void set_dir_value() {
     dir_value[7] = col + 1;
 }
 
-class EWN{
-private:
-    int board[MAX_ROW * MAX_COL];
+int board[MAX_ROW * MAX_COL];
 
+class EWN{
 public:
     int pos[MAX_PIECES + 2];  // pos[0] and pos[MAX_PIECES + 1] are not used
     // int history[MAX_PLIES];
@@ -75,11 +74,12 @@ public:
     }
     void scan_board()
     {
+        int tmp;
         scanf(" %d %d", &row, &col);
         for (int i = 0; i < row * col; i++) {
-            scanf(" %d", &board[i]);
-            if (board[i] > 0)
-                pos[board[i]] = i;
+            scanf(" %d", &tmp);
+            if (tmp > 0)
+                pos[tmp] = i;
         }
         scanf(" %d", &period);
         for (int i = 0; i < period; i++) {
@@ -103,16 +103,7 @@ public:
         }
         printf("%d,%d\n", n_plies, step_need);
     }
-    // int print_history() {
-    //     printf("%d\n", n_plies);
-    //     int piece, dir;
-    //     for (int i = 0; i < n_plies; i++) {
-    //         piece = (history[i] & 255) >> 4;
-    //         dir = history[i] & 15;
-    //         printf("%d %d\n", piece, dir);
-    //     }
-    //     return 0;
-    // }
+    
     bool is_goal()
     {
         if (goal_piece == 0) {
@@ -165,6 +156,13 @@ int move_gen2(int *moves, int piece, int location) {
 }
 
 int EWN::move_gen_all(int *moves) {
+    memset(board, 0, MAX_ROW * MAX_COL);
+    for (int i = 0; i < MAX_PIECES + 2; i++) {
+        if (pos[i] != -1 && pos[i] != 999)
+            board[pos[i]] = i;
+        // printf("hi\n");
+    }
+
     int count = 0;
     int dice = dice_seq[n_plies % period];
     if (pos[dice] == -1) {
@@ -294,8 +292,6 @@ void EWN::calc_step_need() {
 void EWN::copy(const EWN& a, int new_parent) {
     for (int i = 0; i < MAX_PIECES + 2; i++) {
         pos[i] = a.pos[i];
-        if (pos[i] != -1 && pos[i] != 999)
-            board[pos[i]] = i;
     }
     n_plies = a.n_plies;
     state_value = a.state_value;
@@ -403,7 +399,7 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
                 best = bidx;
                 // buffer[bidx++] = buffer[cur];
                 buffer[bidx++].copy(buffer[cur], cur);
-		bidx %= MAX_BUFFER;
+		        bidx %= MAX_BUFFER;
                 // cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
                 buffer[cur].undo();
                 break;
@@ -415,14 +411,14 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
                 // buffer[bidx++] = buffer[cur];
                 buffer[bidx++].copy(buffer[cur], cur);
                 pq.push(cur_hash);
-		bidx %= MAX_BUFFER;
+		        bidx %= MAX_BUFFER;
             }
             else {
                 int vidx = vis[cur_hash];
                 if (buffer[vidx].n_plies > buffer[cur].n_plies) {   // if the new one takes less steps
                     vis[cur_hash] = cur;
                     buffer[bidx++].copy(buffer[cur], cur);
-		    bidx %= MAX_BUFFER;
+		            bidx %= MAX_BUFFER;
                 }
             }
 
@@ -443,7 +439,5 @@ int main(int argc, char *argv[])
     chrono::time_point<chrono::steady_clock> start = chrono::steady_clock::now();
     buffer[bidx++].scan_board();
     f_solve(start);
-    // auto end = chrono::steady_clock::now();
-    // cout << "Total time: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
     return 0;
 }
