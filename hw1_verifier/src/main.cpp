@@ -387,29 +387,18 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
             if (buffer[cur].pos[i] != -1)
                 board[buffer[cur].pos[i]] = i;
         }
-        // cout << "=========\n";
-        // buffer[cur].print_board();
-        // print_history(cur);
+        
         n_move = buffer[cur].move_gen_all(moves);
         for (int i = 0; i < n_move; i++) {
-            // cout << "---\n";
-            // buffer[cur].print_board();
-            // print_history(cur);
             buffer[cur].do_move(moves[i]);
-            // buffer[cur].print_board();
-            // print_history(cur);
 
             if (buffer[cur].is_goal() && (buffer[cur].n_plies < buffer[best].n_plies || best == 0)){
                 best = bidx;
                 // buffer[bidx++] = buffer[cur];
                 buffer[bidx++].copy(buffer[cur], cur);
-		        // bidx %= MAX_BUFFER;
                 // cout << "Find solution at: " << setw(10) << chrono::duration_cast<chrono::nanoseconds>(end-start).count() << " ns" << endl;
-                // print_history(bidx-1);
-                // cout << "MAX:" << bidx << '\n';
                 buffer[cur].undo();
                 break;
-                // return print_history(bidx-1);
             }
 
             cur_hash = ehash(buffer[cur]);
@@ -418,14 +407,12 @@ int f_solve(chrono::time_point<chrono::steady_clock> &start)
                 // buffer[bidx++] = buffer[cur];
                 buffer[bidx++].copy(buffer[cur], cur);
                 pq.push(cur_hash);
-		        // bidx %= MAX_BUFFER;
             }
             else {
                 int vidx = vis[cur_hash];
                 if (buffer[vidx].n_plies > buffer[cur].n_plies) {   // if the new one takes less steps
                     vis[cur_hash] = cur;
                     buffer[bidx++].copy(buffer[cur], cur);
-		            // bidx %= MAX_BUFFER;
                 }
             }
 
