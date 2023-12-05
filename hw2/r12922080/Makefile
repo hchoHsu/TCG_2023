@@ -1,6 +1,6 @@
 # CXXFLAGS = -std=c++11 -O3 -Wall -Wextra -ffast-math
-CXXFLAGS = -std=c++17 -O3
-# CXXFLAGS = -std=c++11 -O3 -ffast-math
+# CXXFLAGS = -std=c++17 -O3
+CXXFLAGS = -std=c++11 -O3 -ffast-math
 # CXXFLAGS = -std=c++11 -O3
 
 all: agent

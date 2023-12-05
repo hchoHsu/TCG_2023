@@ -13,7 +13,8 @@
 
 #define MAX_UCB_TRIAL 1000
 
-#define SIMULATION_PER_BRANCH 15
+#define SIMULATION_PER_BRANCH 20
+#define SIMULATION_PER_OVER_BRANCH 30
 
 extern int self_color;
 extern int enmy_color;
@@ -67,11 +68,14 @@ public:
     int c_id[MAX_MOVES];
     int depth=0;
     int Nchild=0;
+    
     long long Ntotal=0;
-    double CsqrtlogN=0;
-    double sqrtN=0;
+    float CsqrtlogN=0;
+    float sqrtN=0;
+    float CsqrtlogN_div_sqrtN=0;
     long long sum1=0;
-    double Average=0;
+    float Average=0;
+    float Variance=0;
 };
 
 int MCTS(EWN &game);
@@ -80,15 +84,15 @@ int FindPV(int ptr, min_board &pvb);
 void expand(int &id, min_board &game);
 
 void simulate(int &id, min_board &pvb);
-void simulate_is_over(int &id, int &rtover);
+void simulate_is_over(int &rtover);
 
 void backpropagation(int ptr);
-void backpropagation_single(int ptr);
+// void backpropagation_single(int ptr);
 
 void update_nodes(int &id);
-void update_nodes(int &ptr, int &id);
+// void update_nodes(int &ptr, int &id);
 
-double UCB(int &id);
+inline float UCB(int &id);
 
 int random_walk(min_board &game);
 int get_random_move(min_board &game);

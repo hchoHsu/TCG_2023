@@ -15,6 +15,7 @@
 #define is_blue_cube_fast(x) ((x) >= (MAX_CUBES))
 #define is_empty_cube(x) ((x) == 0xf)
 #define change_player(x) ((x) ^= 1)
+#define min(x,y) ((x) < (y) ? (x) : (y))
 
 static const int dir_val[2][4] = {{1, COL, COL+1, -COL+1}, {-1, -COL, -COL-1, COL-1}};
 static const int init_pos[2][MAX_CUBES] = {
@@ -30,16 +31,16 @@ int dice_seq[PERIOD];
 node nodes[2500000];
 int func_expand_moves[MAX_MOVES];
 int func_random_moves[MAX_MOVES];
-int total_nodes = 0;
 
-min_board simulate_01, simulate_02;
-
-int root = 0;
-
-double SR = 0;
-
+min_board simulate_01;
 long long simulate_deltaN;
 long long simulate_deltaW;
+long long simulate_inner_deltaW;
+
+int root = 0;
+int total_nodes = 0;
+
+float l_2_f;
 
 void EWN::init_board() {
     memset(board, 0xff, sizeof(board));
@@ -61,11 +62,12 @@ void EWN::init_board() {
         }
         offset += MAX_CUBES;
     }
-    fprintf(stderr, "dice_seq:");
+    // fprintf(stderr, "dice_seq:");
     for (int i = 0; i < PERIOD; i++) {
         dice_seq[i] = getchar() - '0';
-        fprintf(stderr, "%d, ", dice_seq[i]);
-    } fprintf(stderr, "\n\n");
+        // fprintf(stderr, "%d, ", dice_seq[i]);
+    }
+    // fprintf(stderr, "\n\n");
 }
 
 bool EWN::is_over() {
@@ -211,7 +213,7 @@ bool min_board::is_over() {
 int min_board::is_over_rtresult() {
     if (num_cubes[RED] == 0) return 1;
     if (num_cubes[BLUE] == 0) return -1;
-    if (board[0] >= MAX_CUBES) return 1;
+    if (is_blue_cube(board[0])) return 1;
     if (is_red_cube(board[41])) return -1;
     return 0;
 }
@@ -334,45 +336,56 @@ int MCTS(EWN &game) {
     nodes[root].sqrtN=0;
     nodes[root].sum1=0;
     nodes[root].Average=0;
+    nodes[root].Variance=0;
+
+    total_nodes += 1;
 
     min_board pvb;
     pvb.copy(game);
 
-    int findpv_cnt = 0, rtover;
-    
+    int rtover;
+    // int findpv_cnt = 0, sim_ovr = 0, sim = 0;
     while (clock() < time_limit)
-    {
+    {   
         pvb.copy(game);
         ptr = FindPV(root, pvb);
-        findpv_cnt++;
+        // findpv_cnt++;
         // pvb.print_board();
         rtover = pvb.is_over_rtresult();
-        if (rtover) {
-            simulate_is_over(ptr, rtover);
-            backpropagation_single(ptr);
+        if (rtover != 0) {
+            simulate_is_over(rtover);
+            // sim_ovr++;
+            backpropagation(ptr);
         }
         else {
             if (total_nodes < 2499990) {
                 expand(ptr, pvb);
                 simulate(ptr, pvb);
+                // sim++;
                 backpropagation(ptr);
             }
-            else {
-                // Todo: simulate will destroy the rate below this node
-                fprintf(stderr, "Buffer out of range!");
-                simulate(ptr, pvb);
-                backpropagation_single(ptr);
-            }
+            // else {
+            //     // Todo: simulate will destroy the rate below this node
+            //     fprintf(stderr, "Error!: Buffer out of range!");
+            //     simulate(ptr, pvb);
+            //     // sim++;
+            //     backpropagation(ptr);
+            // }
         }
+
+        if (nodes[root].Ntotal > 1000000000000)
+            break;
     }
 
+    // fprintf(stderr, "\n\n***** sim_ovr / sim: %d, %d\n\n", sim_ovr, sim);
+
     // Find best move
-    int maxchild, ctmp;
     // long long total_simulates=0;
-    double maxV, tmp;
+    int maxchild, ctmp;
+    float maxV, tmp;
     maxchild = child(root, 0);
     maxV = nodes[maxchild].Average;
-    // total_simulates += nodes[maxchild].Ntotal;
+    // fprintf(stderr, "-- single simulates: %lld, %f\n", nodes[ctmp].Ntotal, nodes[ctmp].Average);
     for (int i = 1; i < nodes[root].Nchild; i++) {
         ctmp = child(root, i);
         tmp = nodes[ctmp].Average;
@@ -380,21 +393,24 @@ int MCTS(EWN &game) {
             maxV = tmp;
             maxchild = ctmp;
         }
-        // fprintf(stderr, "-- single simulates: %lld\n", nodes[ctmp].Ntotal);
+
+        // fprintf(stderr, "-- single simulates: %lld, %f\n", nodes[ctmp].Ntotal, nodes[ctmp].Average);
         // total_simulates += nodes[ctmp].Ntotal;
     }
 
-    fprintf(stderr, "Total FindPV: %d\n", findpv_cnt);
+    // fprintf(stderr, "Total FindPV: %d\n", findpv_cnt);
     // fprintf(stderr, "Total simulates: %lld\n", total_simulates);
-    // fprintf(stderr, "Total nodes: %d\n", total_nodes);
+    fprintf(stderr, "Total nodes: %8d\n", total_nodes);
     
     return nodes[maxchild].move;
 }
 
 int FindPV(int ptr, min_board &pvb) {
     int maxchild, i, ctmp;
-    double maxV, tmp;
+    float maxV, tmp;
     
+    // fprintf(stderr, "\n***** FindPV win rate:\n");
+
     while(nodes[ptr].Nchild > 0)
     {
         maxchild = child(ptr, 0);
@@ -408,6 +424,9 @@ int FindPV(int ptr, min_board &pvb) {
             }
         }
         ptr = maxchild;
+        // fprintf(stderr, "> node win rate: %f\n", nodes[maxchild].Average);
+        // fprintf(stderr, "> node ucb rate: %f\n", maxV);
+        // fprintf(stderr, "> node back thx: %f\n\n", nodes[parent(maxchild)].CsqrtlogN / nodes[maxchild].sqrtN);
         pvb.do_move(nodes[maxchild].move);
     }
     
@@ -425,7 +444,7 @@ void expand(int &id, min_board &game) {
         nodes[total_nodes].p_id = id;
         nodes[total_nodes].depth = nodes[id].depth + 1;
         nodes[total_nodes].Nchild = 0;
-        nodes[total_nodes].Ntotal = SIMULATION_PER_BRANCH;
+        nodes[total_nodes].Ntotal = 0;
         nodes[total_nodes].sum1 = 0;
         nodes[id].c_id[i] = total_nodes;
         total_nodes += 1;
@@ -437,12 +456,23 @@ void expand(int &id, min_board &game) {
 
 void simulate(int &ptr, min_board &pvb)
 {
+    // Main Goal:
+    // Calculate simulate_deltaW and simulate_deltaN for update_nodes
+
     int i, id, undo_move, cnt;
+
+    // maintain the total simulation and total num of wins
     simulate_deltaN = nodes[ptr].Nchild * SIMULATION_PER_BRANCH;
     simulate_deltaW = 0;
+
     for (i = 0; i < nodes[ptr].Nchild; i++) {
+        // reset the inner deltaW
+        simulate_inner_deltaW = 0;
+        
+        // assign id
         id = nodes[ptr].c_id[i];
         
+        // record previous move
         undo_move = pvb.do_move_simulate(nodes[id].move);
         
         simulate_01.copy(pvb);
@@ -452,30 +482,42 @@ void simulate(int &ptr, min_board &pvb)
         cnt = SIMULATION_PER_BRANCH;
         
         while(cnt--) {
-            // fprintf(stderr, "> Random_walk.\n");
-            nodes[id].sum1 += (self_color == random_walk(simulate_01)) ? 1 : 0;
+            simulate_inner_deltaW += ((self_color == random_walk(simulate_01)) ? 1 : 0);
             simulate_01.copy(pvb);
         }
 
-        // nodes[id].CsqrtlogN = 1.18 * sqrt(log((double)nodes[id].Ntotal));
-        nodes[id].sqrtN = sqrt((double)nodes[id].Ntotal);
-        nodes[id].Average = (double)nodes[id].sum1 / (double)nodes[id].Ntotal;
-        
+        nodes[id].Ntotal += SIMULATION_PER_BRANCH;
+        l_2_f = (float)nodes[id].Ntotal;
+
+        nodes[id].sqrtN = sqrtf(l_2_f);
+
+        nodes[id].sum1 += simulate_inner_deltaW;
+        nodes[id].Average = (float)nodes[id].sum1 / l_2_f;
+        nodes[id].Variance = nodes[id].Average * (1 - nodes[id].Average);
+
+        // undo previous move
         pvb.undo(undo_move);
-        simulate_deltaW += nodes[id].sum1;
+
+        // Update total wins
+        simulate_deltaW += simulate_inner_deltaW;
     }
 }
 
-void simulate_is_over(int &id, int &rtover) {
-    nodes[id].Ntotal += 100;
-    nodes[id].sum1 += (self_color == rtover) ? 100 : 0;
-
-    // nodes[id].CsqrtlogN = 1.18 * sqrt(log((double)nodes[id].Ntotal));
-    nodes[id].sqrtN = sqrt((double)nodes[id].Ntotal);
-    nodes[id].Average = (double)nodes[id].sum1 / (double)nodes[id].Ntotal;
+void simulate_is_over(int &rtover) {
+    simulate_deltaN = SIMULATION_PER_OVER_BRANCH;
+    simulate_deltaW = ((self_color == rtover) ? SIMULATION_PER_OVER_BRANCH : 0);
 }
 
 void backpropagation(int ptr) {
+    while (ptr != root) {
+        update_nodes(ptr);
+        ptr = parent(ptr);
+    }
+    update_nodes(root);
+}
+
+/*
+void backpropagation_single_is_over(int ptr) {
     while (ptr != root) {
         update_nodes(ptr);
         ptr = parent(ptr);
@@ -490,20 +532,31 @@ void backpropagation_single(int ptr) {
         update_nodes(ptr);
         ptr = parent(ptr);
     }
-    update_nodes(ptr);
+    update_nodes(root);
 }
+*/
 
 void update_nodes(int &id) {
     nodes[id].Ntotal += simulate_deltaN;
-    nodes[id].CsqrtlogN = 1.18 * sqrt(log((double)nodes[id].Ntotal));
-    nodes[id].sqrtN = sqrt((double)nodes[id].Ntotal);
+    l_2_f = (float)nodes[id].Ntotal;
+    nodes[id].CsqrtlogN = 1.18 * sqrtf(logf(l_2_f));
+    nodes[id].sqrtN = sqrtf(l_2_f);
     nodes[id].sum1 += simulate_deltaW;
-    nodes[id].Average = (double)nodes[id].sum1 / (double)nodes[id].Ntotal;
+    nodes[id].Average = (float)nodes[id].sum1 / l_2_f;
+    nodes[id].Variance = nodes[id].Average * (1 - nodes[id].Average);
 }
 
-inline double UCB(int &id) {
-    return ((nodes[id].depth%2) ? nodes[id].Average : (1.0-nodes[id].Average)) + nodes[parent(id)].CsqrtlogN / nodes[id].sqrtN;
+// inline float UCB(int &id) {
+//     return ((nodes[id].depth%2) ? nodes[id].Average : (1.0-nodes[id].Average)) + nodes[parent(id)].CsqrtlogN / nodes[id].sqrtN;
+// }
+
+float CsqrtlogN_div_sqrtN;
+inline float UCB(int &id) {
+    CsqrtlogN_div_sqrtN = nodes[parent(id)].CsqrtlogN / nodes[id].sqrtN;
+    return ((nodes[id].depth%2) ? nodes[id].Average : (1.0-nodes[id].Average)) + (CsqrtlogN_div_sqrtN \
+             * sqrtf(min(nodes[id].Variance + 1.414214 * CsqrtlogN_div_sqrtN, 0.25)));
 }
+
 
 int get_random_move(min_board &game) {
     int num_moves = game.move_gen_all(func_random_moves);
