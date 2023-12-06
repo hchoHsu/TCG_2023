@@ -11,8 +11,6 @@
 #define MAX_PLIES 150  // the average ply of a game is far smaller than this number
 #define MAX_MOVES 8
 
-#define MAX_UCB_TRIAL 1000
-
 #define SIMULATION_PER_BRANCH 20
 #define SIMULATION_PER_OVER_BRANCH 30
 
@@ -61,8 +59,6 @@ public:
 class node {
 public:
     int move=0;  // move from parent
-    // int num_cubes[2];
-    int next=0;  // next player
 
     int p_id=0;
     int c_id[MAX_MOVES];
@@ -72,7 +68,6 @@ public:
     long long Ntotal=0;
     float CsqrtlogN=0;
     float sqrtN=0;
-    float CsqrtlogN_div_sqrtN=0;
     long long sum1=0;
     float Average=0;
     float Variance=0;
@@ -95,9 +90,9 @@ void update_nodes(int &id);
 inline float UCB(int &id);
 
 int random_walk(min_board &game);
-int get_random_move(min_board &game);
+// int get_random_move(min_board &game);
 
 int move_gen(int *move_arr, int cube, int location);
-int get_random_move(EWN &);
+// int get_random_move(EWN &);
 
 #endif

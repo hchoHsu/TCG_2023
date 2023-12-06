@@ -28,7 +28,7 @@ size_t size_of_board;
 
 int dice_seq[PERIOD];
 
-node nodes[2500000];
+node nodes[800000];
 int func_expand_moves[MAX_MOVES];
 int func_random_moves[MAX_MOVES];
 
@@ -325,9 +325,9 @@ int MCTS(EWN &game) {
     a = clock();
     time_limit = a + 1.7 * CLOCKS_PER_SEC;
     // game.print_board();
+    // fprintf(stderr, "\n\n***** Start MCTS:\n");
     root = 0;
     int ptr = root;
-    nodes[root].next = game.next;
     nodes[root].p_id=root;
     nodes[root].depth=0;
     nodes[root].Nchild=0;
@@ -343,8 +343,8 @@ int MCTS(EWN &game) {
     min_board pvb;
     pvb.copy(game);
 
-    int rtover;
     // int findpv_cnt = 0, sim_ovr = 0, sim = 0;
+    int rtover;
     while (clock() < time_limit)
     {   
         pvb.copy(game);
@@ -358,19 +358,18 @@ int MCTS(EWN &game) {
             backpropagation(ptr);
         }
         else {
-            if (total_nodes < 2499990) {
-                expand(ptr, pvb);
-                simulate(ptr, pvb);
-                // sim++;
-                backpropagation(ptr);
-            }
+            // if (total_nodes < 799990) {
+            expand(ptr, pvb);
+            simulate(ptr, pvb);
+            backpropagation(ptr);
+            // }
             // else {
             //     // Todo: simulate will destroy the rate below this node
             //     fprintf(stderr, "Error!: Buffer out of range!");
             //     simulate(ptr, pvb);
-            //     // sim++;
             //     backpropagation(ptr);
             // }
+            // sim++;
         }
 
         if (nodes[root].Ntotal > 1000000000000)
@@ -385,6 +384,7 @@ int MCTS(EWN &game) {
     float maxV, tmp;
     maxchild = child(root, 0);
     maxV = nodes[maxchild].Average;
+    // total_simulates += nodes[maxchild].Ntotal;
     // fprintf(stderr, "-- single simulates: %lld, %f\n", nodes[ctmp].Ntotal, nodes[ctmp].Average);
     for (int i = 1; i < nodes[root].Nchild; i++) {
         ctmp = child(root, i);
@@ -400,7 +400,7 @@ int MCTS(EWN &game) {
 
     // fprintf(stderr, "Total FindPV: %d\n", findpv_cnt);
     // fprintf(stderr, "Total simulates: %lld\n", total_simulates);
-    fprintf(stderr, "Total nodes: %8d\n", total_nodes);
+    // fprintf(stderr, "Total nodes: %8d\n", total_nodes);
     
     return nodes[maxchild].move;
 }
@@ -424,10 +424,10 @@ int FindPV(int ptr, min_board &pvb) {
             }
         }
         ptr = maxchild;
+        pvb.do_move(nodes[maxchild].move);
         // fprintf(stderr, "> node win rate: %f\n", nodes[maxchild].Average);
         // fprintf(stderr, "> node ucb rate: %f\n", maxV);
         // fprintf(stderr, "> node back thx: %f\n\n", nodes[parent(maxchild)].CsqrtlogN / nodes[maxchild].sqrtN);
-        pvb.do_move(nodes[maxchild].move);
     }
     
     return ptr;
@@ -476,8 +476,6 @@ void simulate(int &ptr, min_board &pvb)
         undo_move = pvb.do_move_simulate(nodes[id].move);
         
         simulate_01.copy(pvb);
-        
-        nodes[id].next = simulate_01.next;
 
         cnt = SIMULATION_PER_BRANCH;
         
@@ -516,26 +514,6 @@ void backpropagation(int ptr) {
     update_nodes(root);
 }
 
-/*
-void backpropagation_single_is_over(int ptr) {
-    while (ptr != root) {
-        update_nodes(ptr);
-        ptr = parent(ptr);
-    }
-    update_nodes(root);
-}
-
-void backpropagation_single(int ptr) {
-    simulate_deltaN = nodes[ptr].Ntotal;
-    simulate_deltaW = nodes[ptr].sum1;
-    while (ptr != root) {
-        update_nodes(ptr);
-        ptr = parent(ptr);
-    }
-    update_nodes(root);
-}
-*/
-
 void update_nodes(int &id) {
     nodes[id].Ntotal += simulate_deltaN;
     l_2_f = (float)nodes[id].Ntotal;
@@ -557,11 +535,10 @@ inline float UCB(int &id) {
              * sqrtf(min(nodes[id].Variance + 1.414214 * CsqrtlogN_div_sqrtN, 0.25)));
 }
 
-
-int get_random_move(min_board &game) {
-    int num_moves = game.move_gen_all(func_random_moves);
-    return func_random_moves[arc4random_uniform(num_moves)];
-}
+// int get_random_move(min_board &game) {
+//     int num_moves = game.move_gen_all(func_random_moves);
+//     return func_random_moves[arc4random_uniform(num_moves)];
+// }
 
 int random_walk(min_board &game) {
     int num_moves, win_flag;
