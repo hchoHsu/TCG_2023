@@ -7,7 +7,7 @@ MyAI::~MyAI(void){}
 
 void MyAI::Name(const char* data[], char* response)
 {
-	strcpy(response, "r12922080");
+	strcpy(response, "LOSE_ME_IF_YOU_CAN");
 }
 
 void MyAI::Version(const char* data[], char* response)

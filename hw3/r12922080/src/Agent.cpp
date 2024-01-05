@@ -53,6 +53,9 @@ void Print_BOARD() {
 void EWN::init_board() {
     memset(BOARD, 0xff, sizeof(BOARD));
     memset(transition_table, 0x00, sizeof(transition_table));
+    transition_table_count = 0;
+    hash_table.clear();
+    
     n_plies = 0;
 
     int offset = 0;
@@ -240,6 +243,10 @@ double EWN::get_state_value() {
         else
             return (double)((shortest[0] * 2 - shortest[1]) * 6);
         // if (next == RED)
+        //     return (double)((shortest[1] - shortest[0] * 2) * 6);
+        // else
+        //     return (double)((shortest[0] - shortest[1] * 2) * 6);
+        // if (next == RED)
         //     return (double)((shortest[1] * 2 - shortest[0]) * DIS_WEIGHT + det * DET_WEIGHT) * 3.0;
         // else
         //     return (double)((shortest[0] * 2 - shortest[1]) * DIS_WEIGHT + det * DET_WEIGHT) * 3.0;
@@ -292,11 +299,18 @@ double EWN::get_state_value() {
 
 /* ------------------ NegaScout and star1 ------------------ */
 
+long long depth0_cnt = 0;
+long long hit_cnt = 0;
+
 int search_and_get_move_new(EWN &agent, int dice)
 {
     // printf( "Get Dice %d\n", dice);
+    depth0_cnt = 0;
+    hit_cnt = 0;
     int move = NegaScout_Start(agent, dice, -INF_DIST, INF_DIST, DEPTH_LIMIT);
     agent.do_move(move);
+    fprintf(stderr, "Dep0_count %lld\n", depth0_cnt);
+    fprintf(stderr, "hit_count %lld\n", hit_cnt);
     fprintf(stderr, "TT_count %d\n", transition_table_count);
     fprintf(stderr, "agent new move\n");
     Print_BOARD();
@@ -349,7 +363,7 @@ double NegaScout(EWN &agent, int dice, double alpha, double beta, int depth)
 {
     // fprintf(stderr, "Depth %d\n", depth);
     if (depth == 0) {
-        // printf("Depth == 0\n");
+        depth0_cnt++;
         return agent.get_state_value();
     }
     if (agent.is_over()) {    // TODO: and if time is running up
@@ -368,33 +382,34 @@ double NegaScout(EWN &agent, int dice, double alpha, double beta, int depth)
     double n = beta;
 
     // checkout transition table
-    bool is_find_in_hash_table = false;
-    // Print_BOARD();
-    size_t hash_value = return_hash_value(agent.pos, moves, count);
-    // printf("hash_value %zu\n", hash_value);
-    if (hash_table.find(hash_value) != hash_table.end())
-    {
-        // printf("hit!\n\n");
-        is_find_in_hash_table = true;
-        if (transition_table[hash_table[hash_value]][0] >= depth)
-        {
-            switch (transition_table[hash_table[hash_value]][2])
-            {
-                case EXACT:
-                    return transition_table[hash_table[hash_value]][1];
-                break;
-                case UPPER:
-                    alpha = max(alpha, transition_table[hash_table[hash_value]][1]);
-                    if (alpha >= beta)
-                        return alpha;
-                break;
-                case LOWER:
-                    beta = min(beta, transition_table[hash_table[hash_value]][1]);
-                    if (beta <= alpha)
-                        return beta;
-            }
-        }
-    }
+    // bool is_find_in_hash_table = false;
+    // // Print_BOARD();
+    // size_t hash_value = return_hash_value(agent.pos, moves, count);
+    // // printf("hash_value %zu\n", hash_value);
+    // if (hash_table.find(hash_value) != hash_table.end())
+    // {
+    //     hit_cnt++;
+    //     // printf("hit!\n\n");
+    //     is_find_in_hash_table = true;
+    //     if (transition_table[hash_table[hash_value]][0] >= depth)
+    //     {
+    //         switch (transition_table[hash_table[hash_value]][2])
+    //         {
+    //             case EXACT:
+    //                 return transition_table[hash_table[hash_value]][1];
+    //             break;
+    //             case UPPER:
+    //                 alpha = max(alpha, transition_table[hash_table[hash_value]][1]);
+    //                 if (alpha >= beta)
+    //                     return alpha;
+    //             break;
+    //             case LOWER:
+    //                 beta = min(beta, transition_table[hash_table[hash_value]][1]);
+    //                 if (beta <= alpha)
+    //                     return beta;
+    //         }
+    //     }
+    // }
 
     for (int i = 0; i < count; i++)
     {
@@ -417,40 +432,40 @@ double NegaScout(EWN &agent, int dice, double alpha, double beta, int depth)
         // Print_BOARD();
 
         if (m >= beta || m == INF_DIST) {
-            int tt_status;
-            if (m == INF_DIST)
-                tt_status = EXACT;
-            else
-                tt_status = UPPER;
+            // int tt_status;
+            // if (m == INF_DIST)
+            //     tt_status = EXACT;
+            // else
+            //     tt_status = UPPER;
             
-            if (is_find_in_hash_table) {
-                transition_table[hash_table[hash_value]][0] = depth;
-                transition_table[hash_table[hash_value]][1] = m;
-                transition_table[hash_table[hash_value]][2] = tt_status;
-            }
-            else {
-                store_result_into_hash(hash_value, depth, m, tt_status);
-            }
+            // if (is_find_in_hash_table) {
+            //     transition_table[hash_table[hash_value]][0] = depth;
+            //     transition_table[hash_table[hash_value]][1] = m;
+            //     transition_table[hash_table[hash_value]][2] = tt_status;
+            // }
+            // else {
+            //     store_result_into_hash(hash_value, depth, m, tt_status);
+            // }
             return m;
         }
 
         n = max(alpha, m) + 1;
     }
 
-    int tt_status;
-    if (m > alpha)
-        tt_status = EXACT;
-    else
-        tt_status = LOWER;
+    // int tt_status;
+    // if (m > alpha)
+    //     tt_status = EXACT;
+    // else
+    //     tt_status = LOWER;
 
-    if (is_find_in_hash_table) {
-        transition_table[hash_table[hash_value]][0] = depth;
-        transition_table[hash_table[hash_value]][1] = m;
-        transition_table[hash_table[hash_value]][2] = tt_status;
-    }
-    else {
-        store_result_into_hash(hash_value, depth, m, tt_status);
-    }
+    // if (is_find_in_hash_table) {
+    //     transition_table[hash_table[hash_value]][0] = depth;
+    //     transition_table[hash_table[hash_value]][1] = m;
+    //     transition_table[hash_table[hash_value]][2] = tt_status;
+    // }
+    // else {
+    //     store_result_into_hash(hash_value, depth, m, tt_status);
+    // }
     return m;
 }
 

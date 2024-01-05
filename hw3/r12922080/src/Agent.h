@@ -11,7 +11,7 @@
 #define MAX_PLIES 150  // the average ply of a game is far smaller than this number
 #define MAX_MOVES 8
 
-#define DEPTH_LIMIT 8
+#define DEPTH_LIMIT 6
 #define TT_SIZE 100000
 
 #define EXACT 0
