@@ -204,25 +204,7 @@ double EWN::get_state_value() {
 
     if (rtState < 0)
     {
-        // Determinancy
-        /*
-        int i, det = 0;
-        if (next == RED) {
-            for (i = 0; i < 6; i++) {
-                if (pos[i] > 0)
-                    det += pos_determinancy[i];
-            }
-        }
-        else {
-            for (i = 0; i < 6; i++) {
-                if (pos[i+6] > 0)
-                    det += pos_determinancy[i];
-            }
-        }
-        */
-
         // Shortest Distance
-        // /*
         int shortest[2] = {4, 4}; // {Red, Blue}
 
         int offset = 0;
@@ -242,52 +224,6 @@ double EWN::get_state_value() {
             return (double)((shortest[1] * 2 - shortest[0]) * 6);
         else
             return (double)((shortest[0] * 2 - shortest[1]) * 6);
-        // if (next == RED)
-        //     return (double)((shortest[1] - shortest[0] * 2) * 6);
-        // else
-        //     return (double)((shortest[0] - shortest[1] * 2) * 6);
-        // if (next == RED)
-        //     return (double)((shortest[1] * 2 - shortest[0]) * DIS_WEIGHT + det * DET_WEIGHT) * 3.0;
-        // else
-        //     return (double)((shortest[0] * 2 - shortest[1]) * DIS_WEIGHT + det * DET_WEIGHT) * 3.0;
-        // if (next == RED)
-        //     return (double)((10 - shortest[0])) * 6.0;
-        // else
-        //     return (double)((10 - shortest[1])) * 6.0;
-        // */
-
-        // Weight
-        /*
-        int rtval = 0;
-        if (next == RED) {
-            for (int i = 0; i < MAX_CUBES; i++) {
-                if (pos[i] >= 0) {
-                    int small = i - 1;
-                    int large = i + 1;
-
-                    while (small >= 0 && pos[small] == -1) small--;
-                    while (large < MAX_CUBES && pos[large] == -1) large++;
-
-                    rtval += (large - small - 1) * pos_shortest_distance(i);
-                }
-            }
-        }
-        else {
-            for (int i = 0; i < MAX_CUBES; i++) {
-                if (pos[i+6] >= 0) {
-                    int small = i - 1;
-                    int large = i + 1;
-
-                    while (small >= 6 && pos[small] == -1) small--;
-                    while (large < 12 && pos[large] == -1) large++;
-
-                    rtval += (large - small - 1) * pos_shortest_distance(i + 6);
-                }
-            }
-        }
-
-        return (double)(20 - rtval) / 12.0;
-        */
     }
     else if (rtState == next)
         return LOSE;
@@ -382,34 +318,34 @@ double NegaScout(EWN &agent, int dice, double alpha, double beta, int depth)
     double n = beta;
 
     // checkout transition table
-    // bool is_find_in_hash_table = false;
-    // // Print_BOARD();
-    // size_t hash_value = return_hash_value(agent.pos, moves, count);
-    // // printf("hash_value %zu\n", hash_value);
-    // if (hash_table.find(hash_value) != hash_table.end())
-    // {
-    //     hit_cnt++;
-    //     // printf("hit!\n\n");
-    //     is_find_in_hash_table = true;
-    //     if (transition_table[hash_table[hash_value]][0] >= depth)
-    //     {
-    //         switch (transition_table[hash_table[hash_value]][2])
-    //         {
-    //             case EXACT:
-    //                 return transition_table[hash_table[hash_value]][1];
-    //             break;
-    //             case UPPER:
-    //                 alpha = max(alpha, transition_table[hash_table[hash_value]][1]);
-    //                 if (alpha >= beta)
-    //                     return alpha;
-    //             break;
-    //             case LOWER:
-    //                 beta = min(beta, transition_table[hash_table[hash_value]][1]);
-    //                 if (beta <= alpha)
-    //                     return beta;
-    //         }
-    //     }
-    // }
+    bool is_find_in_hash_table = false;
+    // Print_BOARD();
+    size_t hash_value = return_hash_value(agent.pos, moves, count);
+    // printf("hash_value %zu\n", hash_value);
+    if (hash_table.find(hash_value) != hash_table.end())
+    {
+        hit_cnt++;
+        // printf("hit!\n\n");
+        is_find_in_hash_table = true;
+        if (transition_table[hash_table[hash_value]][0] >= depth)
+        {
+            switch (transition_table[hash_table[hash_value]][2])
+            {
+                case EXACT:
+                    return transition_table[hash_table[hash_value]][1];
+                break;
+                case UPPER:
+                    alpha = max(alpha, transition_table[hash_table[hash_value]][1]);
+                    if (alpha >= beta)
+                        return alpha;
+                break;
+                case LOWER:
+                    beta = min(beta, transition_table[hash_table[hash_value]][1]);
+                    if (beta <= alpha)
+                        return beta;
+            }
+        }
+    }
 
     for (int i = 0; i < count; i++)
     {
@@ -432,40 +368,40 @@ double NegaScout(EWN &agent, int dice, double alpha, double beta, int depth)
         // Print_BOARD();
 
         if (m >= beta || m == INF_DIST) {
-            // int tt_status;
-            // if (m == INF_DIST)
-            //     tt_status = EXACT;
-            // else
-            //     tt_status = UPPER;
+            int tt_status;
+            if (m == INF_DIST)
+                tt_status = EXACT;
+            else
+                tt_status = UPPER;
             
-            // if (is_find_in_hash_table) {
-            //     transition_table[hash_table[hash_value]][0] = depth;
-            //     transition_table[hash_table[hash_value]][1] = m;
-            //     transition_table[hash_table[hash_value]][2] = tt_status;
-            // }
-            // else {
-            //     store_result_into_hash(hash_value, depth, m, tt_status);
-            // }
+            if (is_find_in_hash_table) {
+                transition_table[hash_table[hash_value]][0] = depth;
+                transition_table[hash_table[hash_value]][1] = m;
+                transition_table[hash_table[hash_value]][2] = tt_status;
+            }
+            else {
+                store_result_into_hash(hash_value, depth, m, tt_status);
+            }
             return m;
         }
 
         n = max(alpha, m) + 1;
     }
 
-    // int tt_status;
-    // if (m > alpha)
-    //     tt_status = EXACT;
-    // else
-    //     tt_status = LOWER;
+    int tt_status;
+    if (m > alpha)
+        tt_status = EXACT;
+    else
+        tt_status = LOWER;
 
-    // if (is_find_in_hash_table) {
-    //     transition_table[hash_table[hash_value]][0] = depth;
-    //     transition_table[hash_table[hash_value]][1] = m;
-    //     transition_table[hash_table[hash_value]][2] = tt_status;
-    // }
-    // else {
-    //     store_result_into_hash(hash_value, depth, m, tt_status);
-    // }
+    if (is_find_in_hash_table) {
+        transition_table[hash_table[hash_value]][0] = depth;
+        transition_table[hash_table[hash_value]][1] = m;
+        transition_table[hash_table[hash_value]][2] = tt_status;
+    }
+    else {
+        store_result_into_hash(hash_value, depth, m, tt_status);
+    }
     return m;
 }
 
