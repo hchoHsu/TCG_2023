@@ -6,6 +6,9 @@ The game covered in this semester is EWN ([wiki](https://en.wikipedia.org/wiki/E
 
 Below, you'll find acknowledgments and comments for each homework assignment. Please carefully review them, as each code may contain bugs.
 
+> Notice
+> Part of the code in this repository is copy from the template of teacher and TA. Please use them with a bunch of respect.
+
 ---
 ## hw1
 A* prunning:
